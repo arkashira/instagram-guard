@@ -1,16 +1,16 @@
 # Instagram Guard
-
-A customizable security dashboard for Instagram users.
+A simple Python project that implements an adaptive account lockout and recovery system for Instagram.
 
 ## Features
-
-* Displays all available security rules with clear descriptions
-* Allows users to toggle rules on/off and save preferences
-* Changes take effect immediately without requiring a restart
+* Account lockout after 5 consecutive failed login attempts within 10 minutes
+* Lockout duration of 30 minutes unless user verifies via email
+* Lockout status persisted in memory and reflected in the UI
 
 ## Usage
-
 1. Create an instance of the `InstagramGuard` class
-2. Call the `get_rules` method to retrieve the available security rules
-3. Call the `toggle_rule` method to enable or disable a specific rule
-4. Call the `save_preferences` method to save the current state
+2. Call the `login_attempt` method to simulate a login attempt
+3. Call the `verify_account` method to verify an account
+4. Call the `get_lockout_status` method to get the lockout status of an account
+
+## Testing
+Run the tests using `pytest` to ensure the implementation is correct.

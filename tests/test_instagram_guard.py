@@ -1,40 +1,28 @@
+from src.instagram_guard import InstagramGuard, Account
 import pytest
-from src.instagram_guard import InstagramGuard, RecoveryAttempt
-import json
 from datetime import datetime, timedelta
 
-def test_send_recovery_email():
+def test_login_attempt_success():
     guard = InstagramGuard()
-    user_id = "example_user"
-    link = guard.send_recovery_email(user_id)
-    assert link.startswith("https://example.com/recover/")
+    assert guard.login_attempt(1) == True
 
-def test_verify_link():
+def test_login_attempt_lockout():
     guard = InstagramGuard()
-    user_id = "example_user"
-    link = guard.send_recovery_email(user_id)
-    success = guard.verify_link(link, user_id)
-    assert success
+    guard.accounts[1] = Account(id=1, lockout_status=False, failed_attempts=4, last_attempt_time=datetime.now())
+    assert guard.login_attempt(1) == True
 
-def test_log_recovery_attempt():
+def test_login_attempt_lockout_duration():
     guard = InstagramGuard()
-    user_id = "example_user"
-    guard.log_recovery_attempt(user_id, True)
-    assert user_id in guard.recovery_attempts
-    assert len(guard.recovery_attempts[user_id]) == 1
-    attempt = guard.recovery_attempts[user_id][0]
-    assert isinstance(attempt, RecoveryAttempt)
-    assert attempt.user_id == user_id
-    assert attempt.success
+    guard.accounts[1] = Account(id=1, lockout_status=True, failed_attempts=5, last_attempt_time=datetime.now() - timedelta(minutes=31))
+    assert guard.login_attempt(1) == True
 
-def test_expired_link():
+def test_verify_account():
     guard = InstagramGuard()
-    user_id = "example_user"
-    link = guard.send_recovery_email(user_id)
-    # Simulate an expired link
-    token = link.split("/")[-1]
-    token_data = json.loads(token)
-    token_data["expires"] = (datetime.now() - timedelta(minutes=15)).isoformat()
-    link = f"https://example.com/recover/{user_id}/{json.dumps(token_data)}"
-    success = guard.verify_link(link, user_id)
-    assert not success
+    guard.accounts[1] = Account(id=1, lockout_status=True, failed_attempts=5, last_attempt_time=datetime.now())
+    assert guard.verify_account(1) == True
+    assert guard.get_lockout_status(1) == False
+
+def test_get_lockout_status():
+    guard = InstagramGuard()
+    guard.accounts[1] = Account(id=1, lockout_status=True, failed_attempts=5, last_attempt_time=datetime.now())
+    assert guard.get_lockout_status(1) == True

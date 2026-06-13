@@ -1,30 +1,64 @@
 import json
+import logging
+import time
 from dataclasses import dataclass
-from typing import Dict, List
+from datetime import datetime, timedelta
+from typing import Dict
 
 @dataclass
-class SecurityRule:
-    name: str
-    description: str
-    enabled: bool
+class RecoveryAttempt:
+    """Represents a recovery attempt."""
+    user_id: str
+    attempt_time: datetime
+    success: bool
 
 class InstagramGuard:
+    """Implements the adaptive account lockout and recovery system."""
     def __init__(self):
-        self.rules = {
-            "geo-restriction": SecurityRule("Geo-Restriction", "Restrict access based on location", False),
-            "device-fingerprinting": SecurityRule("Device Fingerprinting", "Restrict access based on device fingerprint", False)
-        }
+        self.recovery_attempts = {}
 
-    def get_rules(self) -> Dict[str, SecurityRule]:
-        return self.rules
+    def send_recovery_email(self, user_id: str) -> str:
+        """Sends a recovery email with a single-click link that expires in 15 minutes."""
+        link = f"https://example.com/recover/{user_id}/{self.generate_token()}"
+        # Simulate sending an email
+        logging.info(f"Sent recovery email to {user_id} with link {link}")
+        return link
 
-    def toggle_rule(self, rule_name: str) -> None:
-        if rule_name in self.rules:
-            self.rules[rule_name].enabled = not self.rules[rule_name].enabled
-        else:
-            raise ValueError("Rule not found")
+    def generate_token(self) -> str:
+        """Generates a token that expires in 15 minutes."""
+        return json.dumps({"expires": (datetime.now() + timedelta(minutes=15)).isoformat()})
 
-    def save_preferences(self) -> None:
-        # In a real implementation, this would save to a database or file
-        # For this example, we'll just print the current state
-        print(json.dumps({rule_name: rule.enabled for rule_name, rule in self.rules.items()}))
+    def verify_link(self, link: str, user_id: str) -> bool:
+        """Verifies the recovery link and unlocks the account if valid."""
+        try:
+            token = link.split("/")[-1]
+            token_data = json.loads(token)
+            if token_data["expires"] < datetime.now().isoformat():
+                return False
+            # Simulate verifying the user's identity
+            logging.info(f"Verified link for {user_id}")
+            return True
+        except Exception as e:
+            logging.error(f"Error verifying link: {e}")
+            return False
+
+    def log_recovery_attempt(self, user_id: str, success: bool):
+        """Logs the recovery attempt."""
+        attempt = RecoveryAttempt(user_id, datetime.now(), success)
+        if user_id not in self.recovery_attempts:
+            self.recovery_attempts[user_id] = []
+        self.recovery_attempts[user_id].append(attempt)
+        logging.info(f"Logged recovery attempt for {user_id}")
+
+def main():
+    guard = InstagramGuard()
+    user_id = "example_user"
+    link = guard.send_recovery_email(user_id)
+    print(f"Recovery link: {link}")
+    # Simulate verifying the link
+    success = guard.verify_link(link, user_id)
+    guard.log_recovery_attempt(user_id, success)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    main()

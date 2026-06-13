@@ -1,31 +1,40 @@
-from instagram_guard import InstagramGuard, SecurityRule
+import pytest
+from src.instagram_guard import InstagramGuard, RecoveryAttempt
+import json
+from datetime import datetime, timedelta
 
-def test_get_rules():
+def test_send_recovery_email():
     guard = InstagramGuard()
-    rules = guard.get_rules()
-    assert len(rules) == 2
-    assert rules["geo-restriction"].name == "Geo-Restriction"
-    assert rules["device-fingerprinting"].name == "Device Fingerprinting"
+    user_id = "example_user"
+    link = guard.send_recovery_email(user_id)
+    assert link.startswith("https://example.com/recover/")
 
-def test_toggle_rule():
+def test_verify_link():
     guard = InstagramGuard()
-    guard.toggle_rule("geo-restriction")
-    assert guard.get_rules()["geo-restriction"].enabled
-    guard.toggle_rule("geo-restriction")
-    assert not guard.get_rules()["geo-restriction"].enabled
+    user_id = "example_user"
+    link = guard.send_recovery_email(user_id)
+    success = guard.verify_link(link, user_id)
+    assert success
 
-def test_toggle_nonexistent_rule():
+def test_log_recovery_attempt():
     guard = InstagramGuard()
-    try:
-        guard.toggle_rule("nonexistent-rule")
-        assert False, "Expected ValueError"
-    except ValueError as e:
-        assert str(e) == "Rule not found"
+    user_id = "example_user"
+    guard.log_recovery_attempt(user_id, True)
+    assert user_id in guard.recovery_attempts
+    assert len(guard.recovery_attempts[user_id]) == 1
+    attempt = guard.recovery_attempts[user_id][0]
+    assert isinstance(attempt, RecoveryAttempt)
+    assert attempt.user_id == user_id
+    assert attempt.success
 
-def test_save_preferences():
+def test_expired_link():
     guard = InstagramGuard()
-    guard.toggle_rule("geo-restriction")
-    guard.save_preferences()
-    # This will print the current state, but we can't assert on it directly
-    # Instead, we'll verify that the rule was toggled correctly
-    assert guard.get_rules()["geo-restriction"].enabled
+    user_id = "example_user"
+    link = guard.send_recovery_email(user_id)
+    # Simulate an expired link
+    token = link.split("/")[-1]
+    token_data = json.loads(token)
+    token_data["expires"] = (datetime.now() - timedelta(minutes=15)).isoformat()
+    link = f"https://example.com/recover/{user_id}/{json.dumps(token_data)}"
+    success = guard.verify_link(link, user_id)
+    assert not success

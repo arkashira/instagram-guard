@@ -1,16 +1,20 @@
 # Instagram Guard
-A simple Python project that implements an adaptive account lockout and recovery system for Instagram.
+
+A Python project for adaptive account lockout and recovery.
 
 ## Features
-* Account lockout after 5 consecutive failed login attempts within 10 minutes
-* Lockout duration of 30 minutes unless user verifies via email
-* Lockout status persisted in memory and reflected in the UI
+
+* Lock and unlock user accounts
+* Generate and verify recovery links
+* Log recovery attempts
+* Send recovery emails
 
 ## Usage
-1. Create an instance of the `InstagramGuard` class
-2. Call the `login_attempt` method to simulate a login attempt
-3. Call the `verify_account` method to verify an account
-4. Call the `get_lockout_status` method to get the lockout status of an account
 
-## Testing
-Run the tests using `pytest` to ensure the implementation is correct.
+1. Create an instance of the `InstagramGuard` class.
+2. Add users with the `add_user` method.
+3. Lock and unlock accounts with the `lock_account` method.
+4. Generate recovery links with the `generate_recovery_link` method.
+5. Verify recovery links with the `verify_recovery_link` method.
+6. Log recovery attempts with the `log_recovery_attempt` method.
+7. Send recovery emails with the `send_recovery_email` method.
